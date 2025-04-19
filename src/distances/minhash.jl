@@ -1,65 +1,72 @@
-# minhash.jl
-# ==========
-#
-# Distance measures for MinHash sketches
-#
-# see DOI: 10.1186/s13059-016-0997-x
-#
-# This file is a part of BioJulia.
-# License is MIT: https://github.com/BioJulia/GeneticVariation.jl/blob/master/LICENSE.md
+module MinHashDistances
 
-struct Jaccard end
+using MinHash
+using Statistics
+import Base: log
+
+export create_sketch, jaccard, mash, distance
 
 """
-[MASH distances](http://doi.org/10.1186/s13059-016-0997-x), based on MinHash
-sketches of genome sequences provide rapid genome-scale sequence comparisons
-when sequence distance (not specific mutations) are all that's required.
+    create_sketch(seq::AbstractString, k::Int, s::Int) -> Vector{UInt64}
 
-A MinHash sketch is made by taking the `s` smallest hash values for kmers of
-length `k` for a given sequence. The genome distance for two genomes is then
-essentially the [Jaccard index](https://en.wikipedia.org/wiki/Jaccard_index)
-of the minhashes, with some additional modification to account for the size of
-the kmers used.
-"""
-struct MASH end
-
-@inline function distance(::Type{Jaccard}, sketch1::MinHashSketch, sketch2::MinHashSketch)
-    sketch1.kmersize == sketch2.kmersize || error("sketches must have same kmer length")
-    length(sketch1) == length(sketch2) || error("sketches must be the same size")
-
-    matches = 0
-    sketchlen = length(sketch1)
-    i = 1
-    j = 1
-
-    while i <= sketchlen && j <= sketchlen
-        if sketch1.sketch[i] == sketch2.sketch[j]
-            matches += 1
-            i += 1
-            j += 1
-        elseif sketch1.sketch[i] < sketch2.sketch[j]
-            while i <= sketchlen && sketch1.sketch[i] < sketch2.sketch[j]
-                i += 1
-            end
-        elseif sketch2.sketch[j] < sketch1.sketch[i]
-            while j <= sketchlen && sketch2.sketch[j] < sketch1.sketch[i]
-                j += 1
-            end
-        end
+Computes a MinHash sketch for the given sequence `seq` using k-mer length `k`
+and sketch size `s`. This implementation uses a simple sliding-window
+approach to extract k-mers. For more advanced k-mer iteration, consider using Kmers.jl.
+""" 
+function create_sketch(seq::AbstractString, k::Int, s::Int)
+    n = length(seq)
+    if n < k
+        error("Sequence length ($(n)) is shorter than k ($(k)).")
     end
+    kmers = [seq[i:i+k-1] for i in 1:(n-k+1)]
+    # Compute the sketch using MinHash.jl
+    return MinHash.sketch(kmers, s)
+end
 
-    if matches == sketchlen
-        return 1.0
+"""
+    jaccard(sketch1, sketch2) -> Float64
+
+Returns the approximate Jaccard similarity between two MinHash sketches.
+It is computed as the ratio of shared hashes to the total number of unique hashes.
+"""
+function jaccard(sketch1::Vector{UInt64}, sketch2::Vector{UInt64})
+    s1 = Set(sketch1)
+    s2 = Set(sketch2)
+    return length(intersect(s1, s2)) / length(union(s1, s2))
+end
+
+"""
+    mash(sketch1, sketch2, k::Int) -> Float64
+
+Computes the Mash distance between two MinHash sketches using the formula:
+
+    D = -1/k * log( (2*J)/(1+J) )
+
+where J is the Jaccard similarity. Returns `Inf` if J is 0.
+"""
+function mash(sketch1::Vector{UInt64}, sketch2::Vector{UInt64}, k::Int)
+    J = jaccard(sketch1, sketch2)
+    if J == 0.0
+        return Inf
+    end
+    return -1.0 / k * log((2 * J) / (1 + J))
+end
+
+"""
+    distance(metric::Symbol, sketch1, sketch2, k::Int) -> Float64
+
+Dispatches to the appropriate distance metric. Currently supported metrics:
+ - `:jaccard`: returns (1 - Jaccard similarity).
+ - `:mash`: returns the Mash distance.
+"""
+function distance(metric::Symbol, sketch1::Vector{UInt64}, sketch2::Vector{UInt64}, k::Int)
+    if metric == :jaccard
+        return 1.0 - jaccard(sketch1, sketch2)
+    elseif metric == :mash
+        return mash(sketch1, sketch2, k)
     else
-        return matches / (2 * sketchlen - matches)
+        error("Unsupported metric: $metric")
     end
 end
 
-@inline function distance(::Type{MASH}, sketch1::MinHashSketch, sketch2::MinHashSketch)
-    j = distance(Jaccard, sketch1, sketch2)
-    k = sketch1.kmersize
-    return -1/k * log(2j / (1+j))
-end
-
-@inline mash(sketch1::MinHashSketch, sketch2::MinHashSketch) = distance(MASH, sketch1, sketch2)
-@inline jaccard(sketch1::MinHashSketch, sketch2::MinHashSketch) = distance(Jaccard, sketch1, sketch2)
+end # module

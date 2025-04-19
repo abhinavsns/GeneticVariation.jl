@@ -43,20 +43,6 @@ function Base.iterate(header::Header, i = 1)
     return i > lastindex(header.metainfo) ? nothing : (header.metainfo[i], i + 1)
 end
 
-#=
-function Base.start(header::Header)
-    return 1
-end
-
-function Base.done(header::Header, i)
-    return i > endof(header.metainfo)
-end
-
-function Base.next(header::Header, i)
-    return header.metainfo[i], i + 1
-end
-=#
-
 function Base.findall(header::Header, tag::AbstractString)
     return Base.filter(m -> isequaltag(m, tag), header.metainfo)
 end
@@ -73,9 +59,9 @@ end
 
 function Base.show(io::IO, header::Header)
     println(io, summary(header), ':')
-    tags = BioCore.metainfotag.(header.metainfo)
+    tags = metainfotag.(header.metainfo)
     println(io, "  metainfo tags: ", join(unique(tags), ' '))
-      print(io, "     sample IDs: ", join(header.sampleID, ' '))
+    print(io, "     sample IDs: ", join(header.sampleID, ' '))
 end
 
 function Base.write(io::IO, header::Header)

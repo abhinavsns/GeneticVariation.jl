@@ -37,36 +37,24 @@ export
     # VCF and BCF
     VCF,
     BCF,
-    header,
-    metainfotag,
-    metainfoval,
-    isfilled,
-    MissingFieldException
+    header
 
+# Import only the necessary symbols from BioSequences v3.
 import BioSequences:
     BioSequences,
     Alphabet,
     AA_Term,
     BioSequence,
-    bp_chunk_count,
-    Certain,
-    Composition,
     DNAAlphabet,
     GeneticCode,
     ispurine,
-    Kmer,
-    Match,
-    Mismatch,
-    MinHashSketch,
-    NucAlphs,
-    Position,
-    RNAAlphabet,
-    Sequence
-    
-import BioCore:
-    metainfotag,
-    metainfoval,
-    header
+    RNAAlphabet
+
+# Import metadata functions from BioGenerics
+import BioGenerics: header, metainfotag, metainfoval, isfilled
+using Indexes
+using TranscodingStreams
+#import BioGenerics.Exceptions: MissingFieldException, missingerror
 
 import Combinatorics.permutations
 import IntervalTrees: Interval, IntervalValue
@@ -80,7 +68,6 @@ import Twiddle:
 include("vcf/vcf.jl")
 include("bcf/bcf.jl")
 include("site_counting.jl")
-include("seg_sites.jl")
 include("distances/minhash.jl")
 include("distances/proportion.jl")
 include("allele_freq.jl")

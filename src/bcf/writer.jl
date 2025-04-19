@@ -6,7 +6,7 @@
 # This file is a part of BioJulia.
 # License is MIT: https://github.com/BioJulia/GeneticVariation.jl/blob/master/LICENSE
 
-struct Writer{T<:IO} <: BioCore.IO.AbstractWriter
+struct Writer{T<:IO} <: AbstractWriter
     stream::BGZFStreams.BGZFStream{T}
 end
 
@@ -32,7 +32,7 @@ function Writer(output::IO, header::VCF.Header)
     return Writer(stream)
 end
 
-function BioCore.IO.stream(writer::Writer)
+function stream(writer::Writer)
     return writer.stream
 end
 

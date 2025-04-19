@@ -2,15 +2,14 @@ module TestGeneticVariation
 
 using Test
 
-import BioCore.Testing:
-    get_bio_fmt_specimens,
-    random_seq,
-    random_interval
-import BioCore.Exceptions.MissingFieldException
 using BioSequences, GeneticVariation
-import BufferedStreams: BufferedInputStream
+using TranscodingStreams
 import IntervalTrees: IntervalValue
 import YAML
+using FormatSpecimens
+
+import GeneticVariation.VCF: isfilled, metainfotag, metainfoval, VCF, VCF.Reader, VCF.Writer, VCF.Record
+import BioGenerics.Exceptions: MissingFieldException
 
 function random_seq(::Type{A}, n::Integer) where A <: Alphabet
     nts = alphabet(A)
@@ -18,8 +17,6 @@ function random_seq(::Type{A}, n::Integer) where A <: Alphabet
     fill!(probs, 1 / length(nts))
     return BioSequence{A}(random_seq(n, nts, probs))
 end
-
-fmtdir = get_bio_fmt_specimens()
 
 include("vcf.jl")
 include("bcf.jl")

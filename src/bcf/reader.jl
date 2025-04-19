@@ -5,8 +5,7 @@
 #
 # This file is a part of BioJulia.
 # License is MIT: https://github.com/BioJulia/GeneticVariation.jl/blob/master/LICENSE
-
-struct Reader{T<:IO} <: BioCore.IO.AbstractReader
+struct Reader{T<:IO} <: AbstractReader
     version::Tuple{UInt8,UInt8}  # (major, minor)
     header::VCF.Header
     stream::BGZFStreams.BGZFStream{T}
@@ -48,7 +47,7 @@ function Base.eltype(::Type{Reader{T}}) where T
     return Record
 end
 
-function BioCore.IO.stream(reader::Reader)
+function stream(reader::Reader)
     return reader.stream
 end
 
@@ -56,11 +55,8 @@ end
     header(reader::BCF.Reader)::VCF.Header
 Get the header of `reader`.
 """
-function header(reader::Reader)
-    return reader.header
-end
 
-function BioCore.header(reader::Reader)
+function header(reader::Reader)
     return header(reader)
 end
 
@@ -75,3 +71,4 @@ function Base.read!(reader::Reader, record::Record)
     record.indivlen = indivlen
     return record
 end
+

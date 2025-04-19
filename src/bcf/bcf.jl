@@ -8,10 +8,11 @@
 
 module BCF
 
-import BioCore: BioCore, isfilled
+#import BioGenerics: BioGenerics, isfilled
 import GeneticVariation.VCF
 import BGZFStreams
-import BufferedStreams
+import TranscodingStreams
+import BioGenerics.IO: AbstractReader, AbstractWriter, stream
 
 include("record.jl")
 include("reader.jl")

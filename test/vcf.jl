@@ -1,11 +1,11 @@
 @testset "VCF" begin
     metainfo = VCF.MetaInfo()
     @test !isfilled(metainfo)
-    @test occursin(r"^GeneticVariation.VCF.MetaInfo: <not filled>", repr(metainfo))
+    @test occursin(r"^VCF MetaInfo \(GeneticVariation\.VCF\.MetaInfo\): <not filled>", repr(metainfo))
     @test_throws ArgumentError metainfotag(metainfo)
 
     metainfo = VCF.MetaInfo(Vector{UInt8}("##source=foobar1234"))
-    @test isfilled(metainfo)
+    @test isfilled(metainfo)#
     @test metainfotag(metainfo) == "source"
     @test metainfoval(metainfo) == "foobar1234"
 
@@ -30,7 +30,7 @@
 
     record = VCF.Record()
     @test !isfilled(record)
-    @test occursin(r"^GeneticVariation.VCF.Record: <not filled>", repr(record))
+    @test occursin(r"^VCF Record <not filled>", repr(record))
     @test_throws ArgumentError VCF.chrom(record)
 
     record = VCF.Record("20\t302\t.\tT\tTA\t999\t.\t.\tGT")
@@ -250,7 +250,7 @@
     @test_throws EOFError read!(reader, record)
 
     # round-trip test
-    vcfdir = joinpath(fmtdir, "VCF")
+    vcfdir = path_of_format("VCF")
     for specimen in YAML.load_file(joinpath(vcfdir, "index.yml"))
         filepath = joinpath(vcfdir, specimen["filename"])
         records = VCF.Record[]
