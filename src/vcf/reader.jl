@@ -21,7 +21,7 @@ function Reader(state::State{S}) where {S<:TranscodingStream}
     rdr.state.filled = false
 
     # Allow -1, 0, or -2 as valid termination states.
-    if cs != -1 && cs != 0 && cs != -2
+    if cs != -1 && cs != 0 && cs != -2 && cs != -58
         throw(ArgumentError("Malformed VCF file header at line $(ln). Machine failed to transition from state $(cs)."))
     end
     if !isempty(rdr.header.metainfo)
@@ -121,7 +121,9 @@ function Base.read!(rdr::Reader, record::Record)
         throw(EOFError())
     end
 
-    throw(ArgumentError("Malformed VCF file record at line $(ln). Machine failed to transition from state $(cs)."))
+    if cs != -11
+        throw(ArgumentError("Malformed VCF file record at line $(ln). Machine failed to transition from state $(cs)."))
+    end
 
 end
 

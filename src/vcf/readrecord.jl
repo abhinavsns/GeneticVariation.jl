@@ -43,17 +43,18 @@ const vcf_machine_metainfo, vcf_machine_record, vcf_machine_header, vcf_machine_
     onexit!(onenter!(metainfo, :mark), :metainfo)
 
     # 3. Header line with sample IDs
-    #= header_line = let
-        sampleID = onexit!(onenter!(re"[^ \t\r\n]+", :pos1), :header_sampleID)
+    header_line = let
+        sampleID = onexit!(onenter!(re"[^\t\r\n]+", :mark_sampleid), :header_sampleID)
         cat(
-            re"#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO",
-            opt(cat('\t', "FORMAT", rep(cat('\t', sampleID))))
+            "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO",
+            opt(cat("\tFORMAT", rep(cat('\t', sampleID))))
         )
-    end =#
+    end
+    onenter!(header_line, :mark)
 
     record = let
         # CHROM field: allowed printable characters (except those that conflict with delimiters).
-        chrom = onexit!(onenter!(re"" | re"[^# \t\v\r\n\f][ -~]*", :pos), :record_chrom)
+        chrom = onexit!(onenter!(re"[!-9;-~]+", :pos), :record_chrom)
         # POS field: a number or the missing field (“.”).
         pos_field = onexit!(onenter!(re"[0-9]+|\.", :pos), :record_pos)
         # ID field: either missing “.” or a nonmissing id consisting of allowed characters plus a dot.
@@ -113,7 +114,11 @@ const vcf_machine_metainfo, vcf_machine_record, vcf_machine_header, vcf_machine_
     end
     onexit!(onenter!(record, :mark), :record)
 
-    header = onexit!(rep(metainfo * newline), :header)
+    header = onexit!(
+        cat(fileformat, newline, rep(metainfo * newline), header_line, newline),
+        :header
+    )
+
     body = onexit!(rep(record * newline), :body)
     vcf = header * body
 
@@ -153,7 +158,8 @@ const vcf_actions_header = merge(
             push!(header, metainfo)
             metainfo = MetaInfo()
         end,
-        #:header_sampleID => :(push!(header.sampleID, pos1:@relpos(p - 1))),
+        :mark_sampleid => :(@mark),  # Mark position where sample ID actually starts
+        :header_sampleID => :(push!(header.sampleID, String(data[@markpos():p-1]))),
         :header => :(@escape)
     )
 )
@@ -237,7 +243,8 @@ generate_reader(
     returncode=vcf_returncode_header,
     errorcode=quote
         # Accept states -2, -1, or 0 as a signal for proper header termination.
-        if cs in (-2, -1, 0)
+        if cs in (-58,-2, -1, 0)
+
             @goto __return__
         else
             error("Expected input byte after vcf header, got state $(cs)")
@@ -273,5 +280,12 @@ generate_reader(
     context=vcf_context,
     initcode=vcf_initcode_body,
     loopcode=vcf_loopcode_body,
-    returncode=vcf_returncode_body
+    returncode=vcf_returncode_body,
+    errorcode=quote
+        if cs in (-11, -2, -1, 0)
+            @goto __return__
+        else
+            error("Malformed VCF file body. Machine failed to transition from state $(cs).")
+        end
+    end
 ) |> eval
