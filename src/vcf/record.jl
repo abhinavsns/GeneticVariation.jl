@@ -40,6 +40,205 @@ function Record()
     )
 end
 
+#copy constructor
+"""
+    Record(record::Record)
+Create a copy of the given VCF record.
+"""
+function Record(base::Record;
+    chrom=nothing, pos=nothing, id=nothing,
+    ref=nothing, alt=nothing, qual=nothing,
+    filter=nothing, info=nothing, genotype=nothing)
+    checkfilled(base)
+    buf = IOBuffer()
+
+    if chrom == nothing
+        write(buf, base.data[base.chrom])
+    else
+        print(buf, string(chrom))
+    end
+
+    print(buf, '\t')
+    if pos == nothing
+        write(buf, base.data[base.pos])
+    else
+        print(buf, convert(Int, pos))
+    end
+
+    print(buf, '\t')
+    if id == nothing
+        if isempty(base.id)
+            print(buf, '.')
+        else
+            for (i, r) in enumerate(base.id)
+                if i != 1
+                    print(buf, ';')
+                end
+                write(buf, base.data[r])
+            end
+        end
+    else
+        if !isa(id, Vector)
+            id = [id]
+        end
+        if isempty(id)
+            print(buf, '.')
+        else
+            for (i, x) in enumerate(id)
+                if i != 1
+                    print(buf, ';')
+                end
+                print(buf, string(x))
+            end
+        end
+    end
+
+    print(buf, '\t')
+    if ref == nothing
+        write(buf, base.data[base.ref])
+    else
+        print(buf, string(ref))
+    end
+
+    print(buf, '\t')
+    if alt == nothing
+        if isempty(base.alt)
+            print(buf, '.')
+        else
+            for (i, r) in enumerate(base.alt)
+                if i != 1
+                    print(buf, ';')
+                end
+                write(buf, base.data[r])
+            end
+        end
+    else
+        if !isa(alt, Vector)
+            alt = [alt]
+        end
+        if isempty(alt)
+            print(buf, '.')
+        else
+            for (i, x) in enumerate(alt)
+                if i != 1
+                    print(buf, ';')
+                end
+                print(buf, string(x))
+            end
+        end
+    end
+
+    print(buf, '\t')
+    if qual == nothing
+        write(buf, base.data[base.qual])
+    else
+        print(buf, convert(Float64, qual))
+    end
+
+    print(buf, '\t')
+    if filter == nothing
+        if isempty(base.filter)
+            print(buf, '.')
+        else
+            for (i, r) in enumerate(base.filter)
+                if i != 1
+                    print(buf, ';')
+                end
+                write(buf, base.data[r])
+            end
+        end
+    else
+        if !isa(filter, Vector)
+            filter = [filter]
+        end
+        if isempty(filter)
+            print(buf, '.')
+        else
+            for (i, x) in enumerate(filter)
+                if i != 1
+                    print(buf, ';')
+                end
+                print(buf, string(x))
+            end
+        end
+    end
+
+    print(buf, '\t')
+    if info == nothing
+        if isempty(base.infokey)
+            print(buf, '.')
+        else
+            write(buf, base.data[first(base.infokey[1]):last(infovalrange(base, lastindex(base.infokey)))])
+        end
+    else
+        if !isa(info, AbstractDict)
+            throw(ArgumentError("info must be an AbstractDict"))
+        elseif isempty(info)
+            print(buf, '.')
+        else
+            for (i, (key, val)) in enumerate(info)
+                if i != 1
+                    print(buf, ';')
+                end
+                print(buf, string(key))
+                if val != nothing
+                    print(buf, '=', vcfformat(val))
+                end
+            end
+        end
+    end
+
+    print(buf, '\t')
+    if genotype == nothing
+        if isempty(base.format)
+            print(buf, '.')
+        else
+            write(buf, base.data[first(base.format[1]):last(base.format[end])])
+        end
+        if !isempty(base.genotype)
+            for indiv in base.genotype
+                print(buf, '\t')
+                for (i, r) in enumerate(indiv)
+                    if i != 1
+                        print(buf, ':')
+                    end
+                    write(buf, base.data[r])
+                end
+            end
+        end
+    else
+        if !isa(genotype, Vector)
+            genotype = [genotype]
+        end
+        if isempty(genotype)
+            print(buf, '.')
+        else
+            allkeys = String[]
+            for indiv in genotype
+                if !isa(indiv, AbstractDict)
+                    throw(ArgumentError("individual must be anabstract dictionary"))
+                end
+                append!(allkeys, keys(indiv))
+            end
+            allkeys = sort!(unique(allkeys))
+            if !isempty(allkeys)
+                join(buf, allkeys, ':')
+                for indiv in genotype
+                    print(buf, '\t')
+                    for (i, key) in enumerate(allkeys)
+                        if i != 1
+                            print(buf, ':')
+                        end
+                        print(buf, vcfformat(get(indiv, key, '.')))
+                    end
+                end
+            end
+        end
+    end
+
+    return Record(take!(buf))
+end
+
 # Constructor from a data vector, delegating to convert
 """
     Record(data::Vector{UInt8})
@@ -197,7 +396,7 @@ function chrom(record::Record)::String
 end
 
 function haschrom(record::Record)
-    return isfilled(record) 
+    return isfilled(record) && !ismissing(record, record.chrom)
 end
 
 """
@@ -207,19 +406,11 @@ Return the reference position as an Int. Throws MissingFieldException if missing
 """
 function pos(record::Record)::Int
     checkfilled(record)
-    println("data: ", record.data)
-    println("chrom range: ", record.chrom)
-    println("pos range: ", record.pos)
-    println("pos: ", record.data[record.pos])
-    println("id: ", record.id)
-    #println("pos: ", record.data[record.id])
-    println(String(record.data[record.pos]))
-    println(parse(Int, String(record.data[record.pos])))
-    return parse(Int, String(record.data[record.pos]))#unsafe_parse_decimal(Int, record.data, record.pos) + 1
+    return unsafe_parse_decimal(Int, record.data, record.pos)
 end
 
 function haspos(record::Record)
-    return isfilled(record) 
+    return isfilled(record) && !ismissing(record, record.pos)
 end
 
 """
@@ -230,14 +421,14 @@ Throws MissingFieldException if missing.
 """
 function id(record::Record)::Vector{String}
     checkfilled(record)
-    if isempty(record.id)
+    if ismissing(record,record.id[1])
         missingerror(:id)
     end
     return [String(record.data[r]) for r in record.id]
 end
 
 function hasid(record::Record)
-    return record.ncols ≥ 3 && !isempty(record.id)
+    return record.ncols ≥ 3 && !ismissing(record,record.id[1])
 end
 
 """
@@ -272,7 +463,7 @@ function alt(record::Record)::Vector{String}
 end
 
 function hasalt(record::Record)
-    return record.ncols ≥ 5 && !isempty(record.alt)
+    return record.ncols ≥ 5 && !ismissing(record, record.alt[1])
 end
 
 """
@@ -302,14 +493,14 @@ Throws MissingFieldException if missing.
 """
 function filter(record::Record)::Vector{String}
     checkfilled(record)
-    if isempty(record.filter)
+    if ismissing(record,record.filter[1])
         missingerror(:filter)
     end
     return [String(record.data[r]) for r in record.filter]
 end
 
 function hasfilter(record::Record)
-    return record.ncols ≥ 7 && !isempty(record.filter)
+    return record.ncols ≥ 7 && !ismissing(record, record.filter[1])
 end 
 
 """
@@ -333,7 +524,7 @@ function info(record::Record)::Vector{Pair{String,String}}
 end
 
 function hasinfo(record::Record)
-    return record.ncols ≥ 7 && !isempty(record.infokey)
+    return record.ncols ≥ 7 && !isempty( record.infokey)
 end
 
 """
@@ -408,7 +599,7 @@ function format(record::Record)::Vector{String}
 end
 
 function hasformat(record::Record)
-    return record.ncols ≥ 8
+    return record.ncols ≥ 8 && !isempty(record.format) && !ismissing(record, record.format[1])
 end
 
 """
@@ -516,23 +707,13 @@ end
 function ismissing(record::Record, range::UnitRange{Int})
     return length(range) == 1 && record.data[first(range)] == UInt8('.')
 end
-function unsafe_parse_decimal(::Type{T}, data::Vector{UInt8}, range::UnitRange{Int}) where T<:Signed
-    lo = first(range)
-    if data[lo] == UInt8('-')
-        sign = T(-1)
-        lo += 1
-    elseif data[lo] == UInt8('+')
-        sign = T(+1)
-        lo += 1
-    else
-        sign = T(+1)
-    end
-    x = zero(T)
-    @inbounds for i in lo:last(range)
-        x = Base.Checked.checked_mul(x, 10 % T)
-        x = Base.Checked.checked_add(x, (data[i] - UInt8('0')) % T)
-    end
-    return sign * x
+
+function vcfformat(val)
+    return string(val)
+end
+
+function vcfformat(val::Vector)
+    return join(map(vcfformat, val), ',')
 end
 
 function memcmp(p1::Ptr, p2::Ptr, n::Integer)

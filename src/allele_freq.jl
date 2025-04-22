@@ -1,3 +1,11 @@
+# allele_freq.jl
+# ==============
+#
+# Compute allele frequencies with BioJulia data types.
+#
+# This file is a part of BioJulia.
+# License is MIT: https://github.com/BioJulia/GeneticVariation.jl/blob/master/LICENSE.md
+
 module AlleleFreq
 
 export gene_frequencies

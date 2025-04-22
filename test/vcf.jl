@@ -120,7 +120,8 @@
     ##fileformat=VCFv4.3
     #CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO
     """)
-    reader = VCF.Reader(BufferedInputStream(data))
+    # Create an IOBuffer from the raw byte data.
+    reader = VCF.Reader(IOBuffer(Vector{UInt8}(data)))
     @test isa(header(reader), VCF.Header)
     let header = header(reader)
         @test length(header.metainfo) == 1
@@ -143,7 +144,7 @@
     ##INFO=<ID=AA,Number=1,Type=String,Description="Ancestral Allele">
     #CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	NA00001	NA00002	NA00003
     """)
-    reader = VCF.Reader(BufferedInputStream(data))
+    reader = VCF.Reader(IOBuffer(Vector{UInt8}(data)))
     @test isa(header(reader), VCF.Header)
 
     let header = header(reader)
@@ -199,7 +200,7 @@
     chr1\t1234\trs001234\tA\tC\t30\tPASS\tDP=10;AF=0.3\tGT\t0|0\t0/1
     chr2\t4\t.\tA\tAA,AAT\t.\t.\tDP=5\tGT:DP\t0|1:42\t0/1
     """)
-    reader = VCF.Reader(BufferedInputStream(data))
+    reader = VCF.Reader(IOBuffer(Vector{UInt8}(data)))
     record = VCF.Record()
 
     @test read!(reader, record) === record

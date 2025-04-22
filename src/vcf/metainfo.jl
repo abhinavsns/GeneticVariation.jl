@@ -7,14 +7,9 @@
 # License is MIT: https://github.com/BioJulia/GeneticVariation.jl/blob/master/LICENSE
 
 mutable struct MetaInfo
-    # data and filled range
-
     data::Vector{UInt8}             # Raw header data as bytes
     filled::UnitRange{Int}          # Range of data that has been "filled"
-    dict::Bool              
-    
-    
-    # True if value is a dictionary (<...>)
+    dict::Bool                      # True if value is a dictionary (<...>)
     tag::UnitRange{Int}             # Range in data for the tag (after "##" until '=')
     val::UnitRange{Int}             # Range in data for the value (after '=' until end)
     dictkey::Vector{UnitRange{Int}} # For dict values: ranges for each inner key
@@ -41,9 +36,9 @@ function MetaInfo(data::Vector{UInt8})
 end
 
 function Base.convert(::Type{MetaInfo}, data::Vector{UInt8})
-    metainfo = MetaInfo(data, 1:0, false, 1:0, 1:0, UnitRange{Int}[], UnitRange{Int}[])
-    index!(metainfo)
-    return metainfo
+    mi = MetaInfo(data, 1:0, false, 1:0, 1:0, UnitRange{Int}[], UnitRange{Int}[])
+    index!(mi)
+    return mi
 end
 
 """
@@ -92,7 +87,7 @@ function index!(mi::MetaInfo)
 
     # Check if the value appears to be a dictionary (enclosed in < ... >)
     if mi.val.start <= mi.val.stop &&
-       mi.data[mi.val.start] == UInt8('<') && mi.data[mi.val.stop] == UInt8('>')
+        mi.data[mi.val.start] == UInt8('<') && mi.data[mi.val.stop] == UInt8('>')
         mi.dict = true
         index_dict!(mi)
     else
@@ -167,7 +162,7 @@ function Base.:(==)(mi1::MetaInfo, mi2::MetaInfo)
         r1 = datarange(mi1)
         r2 = datarange(mi2)
         return length(r1) == length(r2) &&
-               ccall(:memcmp, Cint, (Ptr{Cvoid}, Ptr{Cvoid}, Csize_t),
+            ccall(:memcmp, Cint, (Ptr{Cvoid}, Ptr{Cvoid}, Csize_t),
             pointer(mi1.data, first(r1)),
             pointer(mi2.data, first(r2)),
             length(r1)) == 0
