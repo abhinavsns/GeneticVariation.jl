@@ -12,7 +12,13 @@ module BCF
 import GeneticVariation.VCF
 import BGZFStreams
 import TranscodingStreams
-import BioGenerics.IO: AbstractReader, AbstractWriter, stream
+using BioGenerics
+import BioGenerics: BioGenerics, isfilled
+import BioGenerics.Exceptions: MissingFieldException, missingerror
+
+function parsehex(str)
+    return map(x -> parse(UInt8, x, base=16), split(str, ' '))
+end
 
 include("record.jl")
 include("reader.jl")

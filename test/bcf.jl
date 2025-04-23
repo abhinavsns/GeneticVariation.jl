@@ -8,7 +8,7 @@
     record.sharedlen = 0x1c
     record.indivlen = 0x00
     # generated from bcftools 1.3.1 (htslib 1.3.1)
-    record.data = parsehex("00 00 00 00 ff ff ff ff 01 00 00 00 01 00 80 7f 00 00 01 00 00 00 00 00 07 17 2e 00")
+    record.data = BCF.parsehex("00 00 00 00 ff ff ff ff 01 00 00 00 01 00 80 7f 00 00 01 00 00 00 00 00 07 17 2e 00")
     record.filled = 1:lastindex(record.data)
     @test BCF.chrom(record) == 1
     record = BCF.Record(record)
@@ -35,7 +35,7 @@
 
     bcfdir = path_of_format("BCF")
     reader = BCF.Reader(open(joinpath(bcfdir, "example.bcf")))
-    let header = header(reader)
+    let header = BCF.header(reader)
         @test length(findall(header, "fileformat")) == 1
         @test findall(header, "fileformat")[1] == VCF.MetaInfo("##fileformat=VCFv4.2")
         @test length(findall(header, "FORMAT")) == 4
@@ -62,12 +62,14 @@
     close(reader)
 
     # round-trip test
-    for specimen in YAML.load_file(joinpath(bcfdir, "index.yml"))
+    bcfdir = path_of_format("BCF")
+    data = TOML.parsefile(joinpath(bcfdir, "index.toml"))
+    for specimen in data["valid"]
         filepath = joinpath(bcfdir, specimen["filename"])
         records = BCF.Record[]
         reader = open(BCF.Reader, filepath)
         output = IOBuffer()
-        writer = BCF.Writer(output, header(reader))
+        writer = BCF.Writer(output, BCF.header(reader))
         for record in reader
             write(writer, record)
             push!(records, record)

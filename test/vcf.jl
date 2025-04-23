@@ -252,8 +252,6 @@
 
     # round-trip test
     vcfdir = path_of_format("VCF")
-    # Parse the TOML file; the file should define an array of tables under the key "specimen"
-    # Parse the TOML file. The file now consists of an array of tables under the key "valid".
     data = TOML.parsefile(joinpath(vcfdir, "index.toml"))
 
     for specimen in data["valid"]
@@ -276,8 +274,4 @@
 
         @test records == records2
     end
-end
-
-function parsehex(str)
-    return map(x -> parse(UInt8, x, base = 16), split(str, ' '))
 end

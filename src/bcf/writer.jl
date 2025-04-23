@@ -6,7 +6,7 @@
 # This file is a part of BioJulia.
 # License is MIT: https://github.com/BioJulia/GeneticVariation.jl/blob/master/LICENSE
 
-struct Writer{T<:IO} <: AbstractWriter
+struct Writer{T<:IO} <: BioGenerics.IO.AbstractWriter
     stream::BGZFStreams.BGZFStream{T}
 end
 
@@ -42,4 +42,11 @@ function Base.write(writer::Writer, record::Record)
     n += write(writer.stream, htol(record.indivlen))
     n += write(writer.stream, record.data)
     return n
+end
+
+function Base.close(writer::Writer)
+    if writer.stream isa IO
+        close(writer.stream)
+    end
+    return nothing
 end

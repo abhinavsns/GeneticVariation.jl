@@ -5,7 +5,7 @@
 #
 # This file is a part of BioJulia.
 # License is MIT: https://github.com/BioJulia/GeneticVariation.jl/blob/master/LICENSE
-struct Reader{T<:IO} <: AbstractReader
+struct Reader{T<:IO} <: BioGenerics.IO.AbstractReader
     version::Tuple{UInt8,UInt8}  # (major, minor)
     header::VCF.Header
     stream::BGZFStreams.BGZFStream{T}
@@ -38,7 +38,7 @@ function Reader(input::IO)
     data = read(stream, l_header)
 
     # parse VCF header
-    vcfreader = VCF.Reader(BufferedStreams.BufferedInputStream(data))
+    vcfreader = VCF.Reader(IOBuffer(data))
 
     return Reader((major, minor), vcfreader.header, stream)
 end
@@ -55,9 +55,15 @@ end
     header(reader::BCF.Reader)::VCF.Header
 Get the header of `reader`.
 """
-
 function header(reader::Reader)
-    return header(reader)
+    return reader.header
+end
+
+function Base.close(reader::Reader)
+    if reader.stream isa IO
+        close(reader.stream)
+    end
+    return nothing
 end
 
 function Base.read!(reader::Reader, record::Record)
