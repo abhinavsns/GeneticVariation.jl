@@ -12,8 +12,8 @@
 
 A VCF writer that sends data to a wrapped IO stream.
 """
-mutable struct Writer{T<:IO} <: BioGenerics.IO.AbstractWriter
-    stream::T
+mutable struct Writer <: BioGenerics.IO.AbstractWriter
+    stream::IO
 end
 
 # Convenience constructor: if given a plain IO, wrap it in a NoopStream.
@@ -35,7 +35,7 @@ function Writer(output::IO, header::Header)
 end
 
 # Expose the underlying stream.
-function stream(writer::Writer)
+function BioGenerics.IO.stream(writer::Writer)
     return writer.stream
 end
 

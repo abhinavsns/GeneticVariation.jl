@@ -129,6 +129,7 @@
         @test metainfoval(header.metainfo[1]) == "VCFv4.3"
         @test isempty(header.sampleID)
     end
+    
 
     # realistic header
     data = Vector{UInt8}("""
@@ -222,8 +223,7 @@
     @test VCF.genotype(record, 2, "GT") == "0/1"
     @test VCF.genotype(record, 1:2, "GT") == ["0|0", "0/1"]
     @test VCF.genotype(record, :, "GT") == VCF.genotype(record, 1:2, "GT")
-    @test occursin(r"^GeneticVariation.VCF.Record:\n.*", repr(record))
-
+    @test occursin(r"^VCF Record\n.*", repr(record))
     @test read!(reader, record) === record
     @test VCF.chrom(record) == "chr2"
     @test VCF.pos(record) == 4
@@ -252,7 +252,11 @@
 
     # round-trip test
     vcfdir = path_of_format("VCF")
-    for specimen in YAML.load_file(joinpath(vcfdir, "index.yml"))
+    # Parse the TOML file; the file should define an array of tables under the key "specimen"
+    # Parse the TOML file. The file now consists of an array of tables under the key "valid".
+    data = TOML.parsefile(joinpath(vcfdir, "index.toml"))
+
+    for specimen in data["valid"]
         filepath = joinpath(vcfdir, specimen["filename"])
         records = VCF.Record[]
         reader = open(VCF.Reader, filepath)
@@ -269,6 +273,7 @@
         for record in VCF.Reader(IOBuffer(take!(output)))
             push!(records2, record)
         end
+
         @test records == records2
     end
 end

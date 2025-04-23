@@ -333,7 +333,7 @@ function Base.copy(rec::Record)
     )
 end
 
-function Base.write(io::IO, rec::Record)
+function Base.write(io::IO, record::Record)
     return unsafe_write(io, pointer(record.data, first(record.filled)), length(record.filled))
 end
 function Base.print(io::IO, record::Record)

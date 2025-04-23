@@ -5,7 +5,7 @@ using Test
 using BioSequences, GeneticVariation
 using TranscodingStreams
 import IntervalTrees: IntervalValue
-import YAML
+import TOML
 using FormatSpecimens
 
 import GeneticVariation.VCF: isfilled, metainfotag, metainfoval, VCF, VCF.Reader, VCF.Writer, VCF.Record
