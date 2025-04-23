@@ -110,28 +110,19 @@ function index_dict!(mi::MetaInfo)
     inner = mi.data[inner_start:inner_end]
     empty!(mi.dictkey)
     empty!(mi.dictval)
-
-    pos = 1
-    while pos <= length(inner)
-        part_start = pos
-        # Find the next comma or end-of-section.
-        while pos <= length(inner) && inner[pos] != UInt8(',')
-            pos += 1
-        end
-        part_end = pos - 1
-        part = inner[part_start:part_end]
+    ranges = split_unquoted_commas(inner)
+    for r in ranges
+        part = inner[r]
         eq_rel = findfirst(x -> x == UInt8('='), part)
         if eq_rel === nothing
             throw(ArgumentError("Malformed dictionary entry in metainfo"))
         end
-        # Compute absolute ranges for key and value.
-        key_start = inner_start + part_start - 1
-        key_end = key_start + eq_rel - 2  # key spans bytes before '='
-        val_start = key_end + 2           # value starts immediately after '='
-        val_end = inner_start + part_end - 1
+        key_start = inner_start + first(r) - 1
+        key_end = key_start + eq_rel - 2
+        val_start = key_end + 2
+        val_end = inner_start + last(r) - 1
         push!(mi.dictkey, key_start:key_end)
         push!(mi.dictval, val_start:val_end)
-        pos += 1  # Skip comma separator, if present.
     end
 end
 
@@ -238,7 +229,7 @@ escape_string(val::String) = replace(val, "\"" => "\\\"")
 function isequaltag(mi::MetaInfo, tag::AbstractString)
     checkfilled(mi)
     return length(mi.tag) == sizeof(tag) &&
-           ccall(:memcmp, Cint, (Ptr{Cvoid}, Ptr{Cvoid}, Csize_t),
+            ccall(:memcmp, Cint, (Ptr{Cvoid}, Ptr{Cvoid}, Csize_t),
         pointer(mi.data, first(mi.tag)),
         pointer(tag), length(mi.tag)) == 0
 end
@@ -340,4 +331,21 @@ end
 function Base.write(io::IO, mi::MetaInfo)
     checkfilled(mi)
     return write(io, mi.data)
+end
+
+function split_unquoted_commas(data::Vector{UInt8})
+    parts = UnitRange{Int}[]
+    in_quotes = false
+    start = 1
+    for i in 1:length(data)
+        b = data[i]
+        if b == UInt8('"')
+            in_quotes = !in_quotes
+        elseif b == UInt8(',') && !in_quotes
+            push!(parts, start:(i-1))
+            start = i + 1
+        end
+    end
+    push!(parts, start:length(data))
+    return parts
 end

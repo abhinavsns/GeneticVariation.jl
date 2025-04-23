@@ -26,19 +26,20 @@ const vcf_machine_metainfo, vcf_machine_record, vcf_machine_header, vcf_machine_
     metainfo = let
         tag = onexit!(onenter!(re"[0-9A-Za-z_\.]+", :pos1), :metainfo_tag)
         simple_val = re"[ -;=-~][ -~]*"
-        dict_val = let
+        dict = let
             dictkey = onexit!(onenter!(re"[0-9A-Za-z_]+", :pos1), :metainfo_dict_key)
-            # Removed the extra onenter! here to avoid overwriting pos2.
-            dictval = onexit!(ralt(
-                    cat('"', rep(ralt(re"[ !#-[\]-~]", "\\\"", "\\\\")), '"'),
-                    rep(re"[ -~]" \ re"[\",>]")
-                ), :metainfo_dict_val)
+            # Removed the extra onenter! here to avoid oxverwriting pos2.
+            dictval = let 
+                quoted = cat('"', rep(ralt(re"[ !#-[\]-~]", "\\\"", "\\\\")), '"')
+                unquoted = rep(re"[ -~]" \ re"[\",>]")
+                ralt(quoted, unquoted)
+            end
+            onexit!(onenter!(dictval, :pos1), :metainfo_dict_val)
             cat('<', delim(cat(dictkey, '=', dictval), ','), '>')
         end
-        local val = ralt(simple_val, dict_val)
-        # Wrap the combined value with onenter!(…, :pos2)
-        val = onexit!(onenter!(val, :pos2), :metainfo_val)
-        cat("##", tag, '=', val)
+        onexit!(onenter!(dict,:pos2), :metainfo_val)
+        cat("##", tag, '=', ralt(simple_val, dict))
+        #cat("##", tag, '=', val)
     end
     onexit!(onenter!(metainfo, :mark), :metainfo)
 
@@ -61,7 +62,7 @@ const vcf_machine_metainfo, vcf_machine_record, vcf_machine_header, vcf_machine_
         id_field = let
             missing_id = onexit!(onenter!(re"\.", :pos), :record_id)
             nonmissing_id = onexit!(onenter!(re"[!-:<-~]+", :pos), :record_id)
-            ralt(missing_id, nonmissing_id)
+            ralt(missing_id,nonmissing_id)
         end
 
         # REF field.
@@ -72,7 +73,7 @@ const vcf_machine_metainfo, vcf_machine_record, vcf_machine_header, vcf_machine_
         alt_field = let
             alt_is_missing = onexit!(onenter!(re"\.", :pos), :record_alt)
             nonmissing_alt = onexit!(onenter!(re"[!-+--~]+", :pos), :record_alt)
-            ralt(alt_is_missing, nonmissing_alt)
+            ralt(delim(nonmissing_alt,','),alt_is_missing)
         end
         # QUAL field: numeric (including scientific), "NaN", ±Inf, or “.”
         qual = onexit!(onenter!(re"[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?|NaN|[-+]Inf|\.", :pos), :record_qual)
@@ -80,7 +81,7 @@ const vcf_machine_metainfo, vcf_machine_record, vcf_machine_header, vcf_machine_
         filter_field = let
             missing_filter = onexit!(onenter!(re"\.", :pos), :record_filter)
             nonmissing_filter = onexit!(onenter!(re"[!-:<-~]+", :pos), :record_filter)
-            ralt(missing_filter, nonmissing_filter)
+            ralt(missing_filter, delim(nonmissing_filter,';'))
         end
         # INFO field: a list of key[=value] pairs delimited by ";" or the missing field “.”
         info_field = let
@@ -187,12 +188,12 @@ const vcf_actions_record = Dict(
 const vcf_actions_body = merge(
     vcf_actions_record,
     Dict(
-        :countline => :(linenum += 1),
         :record => quote
             found_record = true
             $(vcf_actions_record[:record])
             @escape
         end,
+        :countline => :(linenum += 1),
         :body => :(@escape)
     )
 )
@@ -212,6 +213,7 @@ end
 
 const vcf_initcode_record = quote
     pos = 0
+    empty!(record)
 end
 
 const vcf_initcode_body = quote
@@ -282,7 +284,7 @@ generate_reader(
     loopcode=vcf_loopcode_body,
     returncode=vcf_returncode_body,
     errorcode=quote
-        if cs in (-11, -2, -1, 0)
+        if cs in (-2, -1, 0)
             @goto __return__
         else
             error("Malformed VCF file body. Machine failed to transition from state $(cs).")

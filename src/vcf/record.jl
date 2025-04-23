@@ -421,14 +421,14 @@ Throws MissingFieldException if missing.
 """
 function id(record::Record)::Vector{String}
     checkfilled(record)
-    if ismissing(record,record.id[1])
+    if isempty(record.id) || ismissing(record, record.id[1])
         missingerror(:id)
     end
     return [String(record.data[r]) for r in record.id]
 end
 
 function hasid(record::Record)
-    return record.ncols ≥ 3 && !ismissing(record,record.id[1])
+    return record.ncols ≥ 3 && !isempty(record.id) && !ismissing(record, record.id[1])
 end
 
 """
@@ -599,7 +599,7 @@ function format(record::Record)::Vector{String}
 end
 
 function hasformat(record::Record)
-    return record.ncols ≥ 8 && !isempty(record.format) && !ismissing(record, record.format[1])
+    return record.ncols ≥ 7 && !isempty(record.format) && !ismissing(record, record.format[1])
 end
 
 """
@@ -707,6 +707,8 @@ end
 function ismissing(record::Record, range::UnitRange{Int})
     return length(range) == 1 && record.data[first(range)] == UInt8('.')
 end
+
+
 
 function vcfformat(val)
     return string(val)

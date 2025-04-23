@@ -111,6 +111,7 @@ function Base.read!(rdr::Reader, record::Record)
 
     rdr.state.state = cs
     rdr.state.linenum = ln
+    @info rdr.state.stream, "Line $(ln)"
     rdr.state.filled = found
 
     if found
