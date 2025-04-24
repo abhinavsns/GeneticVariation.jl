@@ -1,7 +1,6 @@
-@testset "Segregating sites" begin
-
+@testset "Segregating Sites" begin
     S = [dna"aatcga", dna"aaa", dna"tatcg", dna"catcgac", dna"aatc"]
-    @test count(Segregating, S)[1] == 2 && count(Segregating, S)[2] == 3
+    @test count_segregating_sites(S) == (2, 3)
 
     S = [dna"ATAATAAAAAAATAATAAAAAAATAAAAAAAATAAAAAAAA",
          dna"AAAAAAAATAAATAATAAAAAAATAAAAAAAAAAAAAAAAA",
@@ -13,6 +12,6 @@
          dna"AAAAAAAAAAAAAAATAAAAAAATAAAAAAAAAAAAAAATA",
          dna"AAAAAAAAAAAAAAAAAAAAAAATAAAAAAAAAAAAAAAAA",
          dna"AAAAAAAAAAAAAAATAAAAAAATAATAAAAAAAAAAAAAA"]
-    @test count(Segregating, S)[1] == 16 && count(Segregating, S)[2] == 41
 
+    @test count_segregating_sites(S) == (16, 41)
 end

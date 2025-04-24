@@ -1,11 +1,6 @@
-module MinHashDistances
-
 using MinHash
 using Statistics
 import Base: log
-
-export create_sketch, jaccard, mash, distance
-
 """
     create_sketch(seq::AbstractString, k::Int, s::Int) -> Vector{UInt64}
 
@@ -29,9 +24,9 @@ end
 Returns the approximate Jaccard similarity between two MinHash sketches.
 It is computed as the ratio of shared hashes to the total number of unique hashes.
 """
-function jaccard(sketch1::Vector{UInt64}, sketch2::Vector{UInt64})
-    s1 = Set(sketch1)
-    s2 = Set(sketch2)
+function jaccard(sketch1::MinHash.MinHashSketch, sketch2::MinHash.MinHashSketch)
+    s1 = Set(sketch1.hashes)
+    s2 = Set(sketch2.hashes)
     return length(intersect(s1, s2)) / length(union(s1, s2))
 end
 
@@ -44,7 +39,7 @@ Computes the Mash distance between two MinHash sketches using the formula:
 
 where J is the Jaccard similarity. Returns `Inf` if J is 0.
 """
-function mash(sketch1::Vector{UInt64}, sketch2::Vector{UInt64}, k::Int)
+function mash(sketch1::MinHash.MinHashSketch, sketch2::MinHash.MinHashSketch, k::Int)
     J = jaccard(sketch1, sketch2)
     if J == 0.0
         return Inf
@@ -59,7 +54,7 @@ Dispatches to the appropriate distance metric. Currently supported metrics:
  - `:jaccard`: returns (1 - Jaccard similarity).
  - `:mash`: returns the Mash distance.
 """
-function distance(metric::Symbol, sketch1::Vector{UInt64}, sketch2::Vector{UInt64}, k::Int)
+function distance(metric::Symbol, sketch1::MinHash.MinHashSketch, sketch2::MinHash.MinHashSketch, k::Int)
     if metric == :jaccard
         return 1.0 - jaccard(sketch1, sketch2)
     elseif metric == :mash
@@ -68,5 +63,3 @@ function distance(metric::Symbol, sketch1::Vector{UInt64}, sketch2::Vector{UInt6
         error("Unsupported metric: $metric")
     end
 end
-
-end # module

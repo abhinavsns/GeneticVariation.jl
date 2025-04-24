@@ -11,22 +11,18 @@ __precompile__()
 module GeneticVariation
 
 export
-    # Site types
-    Conserved,
-    Mutated,
-    #Transition,
-    #Transversion,
-    Segregating,
+    segregating_sites,
+    count_segregating_sites,
 
     # Distances
-    Proportion,
-    Jaccard,
-    MASH,
+    create_sketch, 
+    jaccard, 
+    mash, 
     distance,
     pdistance,
-    mash,
-    jaccard,
-
+    pdistance_mutated,
+    jukes_cantor,
+    kimura_distance,
     # Allele frequencies
     gene_frequencies,
 
@@ -70,6 +66,7 @@ include("bcf/bcf.jl")
 include("site_counting.jl")
 include("distances/minhash.jl")
 include("distances/proportion.jl")
+include("distances/evodistances.jl")
 include("allele_freq.jl")
 include("diversity_measures.jl")
 

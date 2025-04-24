@@ -6,10 +6,6 @@
 # This file is a part of BioJulia.
 # License is MIT: https://github.com/BioJulia/GeneticVariation.jl/blob/master/LICENSE.md
 
-module AlleleFreq
-
-export gene_frequencies
-
 using BioSequences 
 
 """
@@ -30,5 +26,3 @@ function gene_frequencies(iterable)
     end
     return Dict(k => v / total for (k, v) in counts)
 end
-
-end  # module AlleleFreq

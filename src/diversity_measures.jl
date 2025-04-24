@@ -78,8 +78,18 @@ function NL79(sequences)
     if n < 2
         return 0.0
     else
-        mutations = pdist(BioSequences.count_pairwise(Mutated, unique_sequences...))
-        return NL79(mutations, collect(values(frequencies)))
+        seqlen = length(unique_sequences[1])  # assume uniform sequence lengths
+        dmat = Matrix{Tuple{Int,Int}}(undef, n, n)
+        @inbounds for i in 1:n
+            for j in i+1:n
+                dmat[i, j] = (mismatches(unique_sequences[i], unique_sequences[j]), seqlen)
+                dmat[j, i] = dmat[i, j]
+            end
+            dmat[i, i] = (0, seqlen)  # No difference with self
+        end
+        mutations = pdist(dmat)
+        testQ_generated = collect(values(frequencies))
+        return NL79(mutations, testQ_generated)
     end
 end
 
@@ -99,7 +109,7 @@ function avg_mut(sequences)
     @inbounds for i in eachindex(sequences)
         si = sequences[i]
         for j in (i + 1):lastindex(sequences)
-            nmut += count(Mutated, si, sequences[j])[1]
+            nmut += mismatches(si, sequences[j])
             n += 1
         end
     end
