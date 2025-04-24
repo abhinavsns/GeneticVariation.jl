@@ -10,8 +10,8 @@
                                         "AGGGGG" => 0.25)
 
         function test_gene_frequencies(genes, answer)
-            test_genes = [bioseq(sq) for sq in sequences]
-            test_answer = Dict{LongDNA, Float64}(bioseq(key) => val for (key, val) in answer)
+            test_genes = [BioSequences.bioseq(sq) for sq in sequences]
+            test_answer = Dict{LongDNA,Float64}(BioSequences.bioseq(key) => val for (key, val) in answer)
             @test gene_frequencies(test_genes) == test_answer
         end
 
