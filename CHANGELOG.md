@@ -4,9 +4,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [Unreleased] 
 ### Added
 - :arrow_up: Added Project.toml
+- Automa v1 compatibility: Upgraded the Automa dependency to "1", enabling the new Automav1 API.
+- BioGenerics support: Imported metadata functions from BioGenerics to unify VCF/BCF header handling.
+- TranscodingStreams integration: Added using TranscodingStreams for more efficient stream transformations in VCF/BCF readers.
+- New VCF record reader: Introduced `src/vcf/readrecord.jl` to encapsulate record parsing logic.
+
+### Changed
+- Streamlined imports: Limited BioSequences imports, upgraded BGZFStreams and BufferedStreams usage, and replaced BioCore I/O types with BioGenerics abstractions.
+- BCF reader refactoring: Transitioned Reader to subtype BioGenerics.IO.AbstractReader, centralized exception handling, and cleaned up parse logic.
+- VCF header & metainfo: Fixed header parsing and improved metainfo tag/value functions to use BioGenerics APIs.
+- Project.toml targets: Reorganized `[extras]` and `[targets]` sections.
+
+### Removed
+- Deprecated dependencies: Dropped older Automa versions (0.7, 0.8) and obsolete IO imports from BioCore.
+
 
 ## [0.4.0] - 2018-11-22
 ### Added
